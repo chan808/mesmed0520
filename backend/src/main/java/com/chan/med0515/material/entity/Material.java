@@ -1,16 +1,14 @@
 package com.chan.med0515.material.entity;
 
 import com.chan.med0515.global.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import com.chan.med0515.production.entity.ProductModel;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.util.Assert;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -37,6 +35,11 @@ public class Material extends BaseEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    // 생산 모델 배정 (nullable — 기준서만 등록된 품목은 모델 미배정 가능)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_model_id")
+    private ProductModel productModel;
+
     @Builder
     public Material(String modelName, String partName, String partCode, String supplier, String materialSpec) {
         Assert.hasText(modelName, "모델명은 필수입니다");
@@ -53,4 +56,7 @@ public class Material extends BaseEntity {
         this.deletedAt = LocalDateTime.now();
     }
 
+    public void assignModel(ProductModel model) {
+        this.productModel = model;
+    }
 }
