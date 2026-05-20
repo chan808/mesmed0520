@@ -1,0 +1,62 @@
+// Use dbdiagram.io to visualize this schema
+
+Table users {
+  id bigint [pk, increment, note: 'PK']
+  username varchar(50) [unique, not null]
+  password varchar [not null]
+  display_name varchar(100)
+  role varchar(20) [note: 'USER, ADMIN 등']
+  created_at datetime
+  updated_at datetime
+}
+
+Table material {
+  id bigint [pk, increment]
+  model_name varchar(50) [not null]
+  part_name varchar(50) [not null]
+  part_code varchar(50)
+  supplier varchar(50)
+  material_spec varchar(20)
+  created_at datetime
+  updated_at datetime
+  deleted_at datetime [note: 'Soft Delete']
+}
+
+Table inspection_standard {
+  id bigint [pk, increment]
+  material_id bigint [not null, ref: > material.id]
+  rev int [not null, note: '개정 번호']
+  established_at date [not null, note: '제정일']
+  inspection_type varchar
+  inspection_level varchar
+  strictness varchar
+  aql decimal
+  aql_ac int
+  aql_re int
+  created_at datetime
+  updated_at datetime
+}
+
+Table inspection_item {
+  id bigint [pk, increment]
+  standard_id bigint [not null, ref: > inspection_standard.id]
+  item_name varchar(20) [not null]
+  specification varchar(100)
+  method varchar(20)
+  equipment varchar(20)
+  timing varchar(20) [note: '입고 시, 정기 등']
+  created_at datetime
+  updated_at datetime
+  deleted_at datetime [note: 'Soft Delete']
+}
+
+Table revision_history {
+  id bigint [pk, increment]
+  standard_id bigint [not null, ref: > inspection_standard.id]
+  rev int [not null]
+  revision_date date [not null]
+  revision_note varchar(100) [not null]
+  confirmed_by varchar(20)
+  created_at datetime
+  updated_at datetime
+}
