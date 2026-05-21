@@ -131,6 +131,7 @@ public class ProductionService {
             throw new BusinessException(ProductionErrorCode.LOT_ALREADY_CLOSED);
         }
         lot.fail();
+        lot.getPlan().incrementFailCount();
         return buildLotDetail(lot);
     }
 

@@ -29,6 +29,9 @@ public class ProductionPlan extends BaseEntity {
     @Column(nullable = false)
     private int passCount;
 
+    @Column(nullable = false)
+    private int failCount;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private PlanStatus status;
@@ -42,6 +45,7 @@ public class ProductionPlan extends BaseEntity {
         this.planDate = planDate;
         this.targetQty = targetQty;
         this.passCount = 0;
+        this.failCount = 0;
         this.status = PlanStatus.PLANNED;
     }
 
@@ -49,6 +53,18 @@ public class ProductionPlan extends BaseEntity {
         if (this.status == PlanStatus.PLANNED) {
             this.status = PlanStatus.IN_PROGRESS;
         }
+    }
+
+    public void updateTargetQty(int qty) {
+        Assert.isTrue(qty > 0, "목표수량은 1 이상이어야 합니다");
+        this.targetQty = qty;
+        if (this.passCount >= this.targetQty) {
+            this.status = PlanStatus.COMPLETED;
+        }
+    }
+
+    public void incrementFailCount() {
+        this.failCount++;
     }
 
     public void incrementPassCount() {

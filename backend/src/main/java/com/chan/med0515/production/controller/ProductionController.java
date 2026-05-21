@@ -44,6 +44,13 @@ public class ProductionController {
         return ResponseEntity.ok(ApiResponse.success(planService.findById(id)));
     }
 
+    @PatchMapping("/plans/{id}/target-qty")
+    public ResponseEntity<ApiResponse<ProductionPlanResponse>> updateTargetQty(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateTargetQtyRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(planService.updateTargetQty(id, request)));
+    }
+
     // ── Lot ───────────────────────────────────────────
 
     @PostMapping("/plans/{planId}/lots")

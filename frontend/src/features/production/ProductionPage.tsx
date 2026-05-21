@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productionApi } from './api';
 import { StatusBadge } from '../../shared/components/StatusBadge';
 import { errorMessage } from '../../shared/api/client';
-import type { ProductionPlanRequest, LotDetailResponse, InspectionResultCode, InspectionResultRequest } from './types';
+import type { ProductionPlanRequest, LotDetailResponse, InspectionResultCode, InspectionResultRequest, UpdateTargetQtyRequest } from './types';
 
 export function ProductionPage() {
   const queryClient = useQueryClient();
@@ -11,6 +11,7 @@ export function ProductionPage() {
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [activeLotId, setActiveLotId] = useState<number | null>(null);
   const [activePlanId, setActivePlanId] = useState<number | null>(null);
+  const [editingQtyPlanId, setEditingQtyPlanId] = useState<number | null>(null);
 
   const { data: plans, isLoading: plansLoading } = useQuery({
     queryKey: ['production', 'plans', selectedDate],
@@ -39,10 +40,20 @@ export function ProductionPage() {
   };
 
   const failLot = useMutation({
-    mutationFn: productionApi.failLot,
+    mutationFn: (lotId: number) => productionApi.failLot(lotId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['production', 'plans', selectedDate] });
       setActiveLotId(null);
+      setActivePlanId(null);
+    },
+  });
+
+  const updateTargetQty = useMutation({
+    mutationFn: ({ id, body }: { id: number; body: UpdateTargetQtyRequest }) =>
+      productionApi.updateTargetQty(id, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['production', 'plans', selectedDate] });
+      setEditingQtyPlanId(null);
     },
   });
 
@@ -57,7 +68,7 @@ export function ProductionPage() {
         }}
         onFail={() => {
           if (confirm('이 Lot을 최종 불합격 처리하시겠습니까?')) {
-            failLot.mutate(activeLotId);
+            failLot.mutate(activeLotId!);
           }
         }}
         onNextLot={() => {
@@ -91,17 +102,44 @@ export function ProductionPage() {
             <tr>
               <th>모델명</th>
               <th>목표 수량</th>
-              <th>합격 수량</th>
+              <th>합격</th>
+              <th>불합격 Lot</th>
               <th>상태</th>
-              <th style={{ width: 120 }}>작업</th>
+              <th style={{ width: 160 }}>작업</th>
             </tr>
           </thead>
           <tbody>
             {plans.map((p) => (
               <tr key={p.id}>
                 <td>{p.modelName}</td>
-                <td className="num">{p.targetQty}</td>
+                <td className="num">
+                  {editingQtyPlanId === p.id ? (
+                    <form
+                      style={{ display: 'flex', gap: 4 }}
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const val = Number((e.target as any).qty.value);
+                        if (val > 0) updateTargetQty.mutate({ id: p.id, body: { targetQty: val } });
+                      }}
+                    >
+                      <input name="qty" type="number" min={1} defaultValue={p.targetQty} style={{ width: 60 }} autoFocus />
+                      <button type="submit" className="small primary">저장</button>
+                      <button type="button" className="small" onClick={() => setEditingQtyPlanId(null)}>✕</button>
+                    </form>
+                  ) : (
+                    <span
+                      style={{ cursor: 'pointer', textDecoration: 'underline dotted' }}
+                      title="클릭하여 수정"
+                      onClick={() => setEditingQtyPlanId(p.id)}
+                    >
+                      {p.targetQty}
+                    </span>
+                  )}
+                </td>
                 <td className="num">{p.passCount}</td>
+                <td className="num" style={{ color: p.failCount > 0 ? '#cf1322' : undefined }}>
+                  {p.failCount ?? 0}
+                </td>
                 <td>
                   <StatusBadge value={p.status} />
                 </td>

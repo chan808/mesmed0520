@@ -11,6 +11,7 @@ public record ProductionPlanResponse(
         LocalDate planDate,
         int targetQty,
         int passCount,
+        int failCount,
         PlanStatus status
 ) {
     public static ProductionPlanResponse from(ProductionPlan plan) {
@@ -20,6 +21,7 @@ public record ProductionPlanResponse(
                 plan.getPlanDate(),
                 plan.getTargetQty(),
                 plan.getPassCount(),
+                plan.getFailCount(),
                 plan.getStatus()
         );
     }

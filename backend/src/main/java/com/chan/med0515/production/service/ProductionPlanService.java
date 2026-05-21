@@ -4,6 +4,7 @@ import com.chan.med0515.global.error.BusinessException;
 import com.chan.med0515.material.repository.MaterialRepository;
 import com.chan.med0515.production.dto.ProductionPlanRequest;
 import com.chan.med0515.production.dto.ProductionPlanResponse;
+import com.chan.med0515.production.dto.UpdateTargetQtyRequest;
 import com.chan.med0515.production.entity.ProductionPlan;
 import com.chan.med0515.production.error.ProductionErrorCode;
 import com.chan.med0515.production.repository.ProductionPlanRepository;
@@ -49,6 +50,13 @@ public class ProductionPlanService {
         return planRepository.findById(id)
                 .map(ProductionPlanResponse::from)
                 .orElseThrow(() -> new BusinessException(ProductionErrorCode.PLAN_NOT_FOUND));
+    }
+
+    @Transactional
+    public ProductionPlanResponse updateTargetQty(Long id, UpdateTargetQtyRequest request) {
+        ProductionPlan plan = getEntityById(id);
+        plan.updateTargetQty(request.targetQty());
+        return ProductionPlanResponse.from(plan);
     }
 
     public ProductionPlan getEntityById(Long id) {

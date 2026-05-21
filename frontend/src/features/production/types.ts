@@ -8,6 +8,7 @@ export interface ProductionPlanResponse {
   planDate: string;
   targetQty: number;
   passCount: number;
+  failCount: number;
   status: PlanStatus;
 }
 
@@ -67,6 +68,10 @@ export interface InspectionResultRequest {
 
 export interface BatchInspectionResultRequest {
   items: InspectionResultRequest[];
+}
+
+export interface UpdateTargetQtyRequest {
+  targetQty: number;
 }
 
 export interface DailyDashboardResponse {

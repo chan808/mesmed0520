@@ -23,7 +23,7 @@ public class LotInspectionResult extends BaseEntity {
     @JoinColumn(name = "lot_id", nullable = false)
     private ProductionLot lot;
 
-    // InspectionItem 단위로 결과 기록 — 항목 하나가 NG면 해당 품목 전체 재검사
+    // InspectionItem 단위로 결과 기록 - 항목 하나가 NG면 해당 품목 전체 재검사
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "inspection_item_id", nullable = false)
     private InspectionItem inspectionItem;

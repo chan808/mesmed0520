@@ -7,6 +7,7 @@ import type {
   LotDetailResponse,
   ProductionPlanRequest,
   ProductionPlanResponse,
+  UpdateTargetQtyRequest,
 } from './types';
 
 export const productionApi = {
@@ -19,6 +20,9 @@ export const productionApi = {
   
   registerPlan: (body: ProductionPlanRequest) =>
     unwrap(api.post<ApiResponse<ProductionPlanResponse>>('/production/plans', body)),
+
+  updateTargetQty: (id: number, body: UpdateTargetQtyRequest) =>
+    unwrap(api.patch<ApiResponse<ProductionPlanResponse>>(`/production/plans/${id}/target-qty`, body)),
 
   // Lots
   startLot: (planId: number) =>
