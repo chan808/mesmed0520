@@ -4,6 +4,7 @@ import com.chan.med0515.production.entity.LotInspectionResult;
 import com.chan.med0515.production.enums.InspectionResultCode;
 import com.chan.med0515.production.enums.LotStatus;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record InspectionResultResponse(
@@ -14,6 +15,7 @@ public record InspectionResultResponse(
         String itemName,
         int round,
         InspectionResultCode result,
+        BigDecimal measuredValue,
         LocalDateTime inspectedAt,
         String memo
 ) {
@@ -26,6 +28,7 @@ public record InspectionResultResponse(
                 r.getInspectionItem().getItemName(),
                 r.getRound(),
                 r.getResult(),
+                r.getMeasuredValue(),
                 r.getInspectedAt(),
                 r.getMemo()
         );

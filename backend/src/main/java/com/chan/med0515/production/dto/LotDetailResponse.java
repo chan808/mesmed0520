@@ -7,6 +7,7 @@ import com.chan.med0515.production.entity.ProductionLot;
 import com.chan.med0515.production.enums.InspectionResultCode;
 import com.chan.med0515.production.enums.LotStatus;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -52,11 +53,13 @@ public record LotDetailResponse(
     public record RoundResult(
             int round,
             InspectionResultCode result,
+            BigDecimal measuredValue,
             LocalDateTime inspectedAt,
             String memo
     ) {
         public static RoundResult from(LotInspectionResult r) {
-            return new RoundResult(r.getRound(), r.getResult(), r.getInspectedAt(), r.getMemo());
+            return new RoundResult(r.getRound(), r.getResult(), r.getMeasuredValue(),
+                    r.getInspectedAt(), r.getMemo());
         }
     }
 

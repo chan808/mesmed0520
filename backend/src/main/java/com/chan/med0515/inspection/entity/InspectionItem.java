@@ -1,6 +1,7 @@
 package com.chan.med0515.inspection.entity;
 
 import com.chan.med0515.global.entity.BaseEntity;
+import com.chan.med0515.inspection.enums.MeasurementType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -8,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLRestriction;
 import org.springframework.util.Assert;
+
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "inspection_item")
@@ -35,6 +38,20 @@ public class InspectionItem extends BaseEntity {
     @Column(length = 20)
     private String timing;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private MeasurementType measurementType;
+
+    // NUMERIC 타입일 때만 사용 — 합격 범위
+    @Column(precision = 10, scale = 4)
+    private BigDecimal minValue;
+
+    @Column(precision = 10, scale = 4)
+    private BigDecimal maxValue;
+
+    @Column(length = 20)
+    private String unit;
+
     @Column(nullable = false)
     private int addedAtRev;
 
@@ -43,15 +60,23 @@ public class InspectionItem extends BaseEntity {
 
     @Builder
     public InspectionItem(InspectionStandard standard, String itemName, String specification,
-                          String method, String equipment, String timing, int addedAtRev) {
+                          String method, String equipment, String timing,
+                          MeasurementType measurementType,
+                          BigDecimal minValue, BigDecimal maxValue, String unit,
+                          int addedAtRev) {
         Assert.notNull(standard, "기준서는 필수입니다");
         Assert.hasText(itemName, "검사항목은 필수입니다");
+        Assert.notNull(measurementType, "측정유형은 필수입니다");
         this.standard = standard;
         this.itemName = itemName;
         this.specification = specification;
         this.method = method;
         this.equipment = equipment;
         this.timing = timing;
+        this.measurementType = measurementType;
+        this.minValue = minValue;
+        this.maxValue = maxValue;
+        this.unit = unit;
         this.addedAtRev = addedAtRev;
     }
 

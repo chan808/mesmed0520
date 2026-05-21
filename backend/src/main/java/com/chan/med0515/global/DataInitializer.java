@@ -3,6 +3,7 @@ package com.chan.med0515.global;
 import com.chan.med0515.inspection.entity.InspectionItem;
 import com.chan.med0515.inspection.entity.InspectionStandard;
 import com.chan.med0515.inspection.entity.RevisionHistory;
+import com.chan.med0515.inspection.enums.MeasurementType;
 import com.chan.med0515.inspection.repository.InspectionItemRepository;
 import com.chan.med0515.inspection.repository.InspectionStandardRepository;
 import com.chan.med0515.inspection.repository.RevisionHistoryRepository;
@@ -56,7 +57,6 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedProductionData() {
-        // 이미 시드됐으면 스킵
         if (materialRepository.existsByPartCode("10018500701")) return;
 
         // ── ER-2000 SMART 품목 3개 ─────────────────────────────
@@ -111,9 +111,9 @@ public class DataInitializer implements CommandLineRunner {
     private void seedLcdStandard(Material lcd) {
         InspectionStandard std = saveStandard(lcd, 2, LocalDate.of(2024, 7, 1),
                 "Sample검사", "II", "보통검사", "2.5", 0, 1);
-        saveItem(std, "DOT 깨짐", "DOT깨짐이 0일 것", "육안", "육안확인", "입고 시");
-        saveItem(std, "FILM CABLE", "접촉 커넥터 부위에 이물질이 없을 것", "육안", "육안확인", "입고 시");
-        saveItem(std, "BLACK LIGHT", "밝기가 균일할 것", "육안", "육안확인", "입고 시");
+        saveVisualItem(std, "DOT 깨짐", "DOT깨짐이 0일 것", "육안", "육안확인", "입고 시");
+        saveVisualItem(std, "FILM CABLE", "접촉 커넥터 부위에 이물질이 없을 것", "육안", "육안확인", "입고 시");
+        saveVisualItem(std, "BLACK LIGHT", "밝기가 균일할 것", "육안", "육안확인", "입고 시");
         revisionRepository.save(RevisionHistory.builder().standard(std).rev(0)
                 .revisionDate(LocalDate.of(2022, 7, 1)).revisionNote("최초개정").confirmedBy("배포").build());
         revisionRepository.save(RevisionHistory.builder().standard(std).rev(2)
@@ -123,8 +123,8 @@ public class DataInitializer implements CommandLineRunner {
     private void seedBtnSwitchStandard(Material m) {
         InspectionStandard std = saveStandard(m, 1, LocalDate.of(2024, 1, 1),
                 "전수검사", "I", "보통검사", "1.0", 0, 1);
-        saveItem(std, "외관검사", "스크래치·이물질 없을 것", "육안", "육안확인", "입고 시");
-        saveItem(std, "클릭감 확인", "클릭음 명확하고 걸림 없을 것", "작동", "수작업", "입고 시");
+        saveVisualItem(std, "외관검사", "스크래치·이물질 없을 것", "육안", "육안확인", "입고 시");
+        saveVisualItem(std, "클릭감 확인", "클릭음 명확하고 걸림 없을 것", "작동", "수작업", "입고 시");
         revisionRepository.save(RevisionHistory.builder().standard(std).rev(0)
                 .revisionDate(LocalDate.of(2024, 1, 1)).revisionNote("최초개정").confirmedBy("배포").build());
     }
@@ -132,8 +132,9 @@ public class DataInitializer implements CommandLineRunner {
     private void seedBatteryStandard(Material m) {
         InspectionStandard std = saveStandard(m, 1, LocalDate.of(2024, 3, 1),
                 "Sample검사", "II", "보통검사", "1.0", 0, 1);
-        saveItem(std, "전압측정", "3.6V ~ 3.8V 범위일 것", "측정", "멀티미터", "입고 시");
-        saveItem(std, "외관검사", "변형·누액 없을 것", "육안", "육안확인", "입고 시");
+        saveNumericItem(std, "전압측정", "3.6V ~ 3.8V 범위일 것", "측정", "멀티미터", "입고 시",
+                new BigDecimal("3.6"), new BigDecimal("3.8"), "V");
+        saveVisualItem(std, "외관검사", "변형·누액 없을 것", "육안", "육안확인", "입고 시");
         revisionRepository.save(RevisionHistory.builder().standard(std).rev(0)
                 .revisionDate(LocalDate.of(2024, 3, 1)).revisionNote("최초개정").confirmedBy("배포").build());
     }
@@ -141,8 +142,10 @@ public class DataInitializer implements CommandLineRunner {
     private void seedSensorStandard(Material m) {
         InspectionStandard std = saveStandard(m, 1, LocalDate.of(2023, 6, 1),
                 "전수검사", "I", "보통검사", "1.0", 0, 1);
-        saveItem(std, "압력정확도", "±2mmHg 이내일 것", "측정", "교정기", "입고 시");
-        saveItem(std, "외관검사", "핀 휨·이물질 없을 것", "육안", "육안확인", "입고 시");
+        // 기준값 150mmHg 기준 ±2 → 148 ~ 152
+        saveNumericItem(std, "압력정확도", "±2mmHg 이내일 것", "측정", "교정기", "입고 시",
+                new BigDecimal("148"), new BigDecimal("152"), "mmHg");
+        saveVisualItem(std, "외관검사", "핀 휨·이물질 없을 것", "육안", "육안확인", "입고 시");
         revisionRepository.save(RevisionHistory.builder().standard(std).rev(0)
                 .revisionDate(LocalDate.of(2023, 6, 1)).revisionNote("최초개정").confirmedBy("배포").build());
     }
@@ -150,8 +153,10 @@ public class DataInitializer implements CommandLineRunner {
     private void seedLcdBStandard(Material m) {
         InspectionStandard std = saveStandard(m, 1, LocalDate.of(2023, 6, 1),
                 "Sample검사", "II", "보통검사", "2.5", 0, 1);
-        saveItem(std, "DOT 깨짐", "DOT깨짐이 0일 것", "육안", "육안확인", "입고 시");
-        saveItem(std, "휘도 균일성", "밝기 편차 10% 이내", "측정", "조도계", "입고 시");
+        saveVisualItem(std, "DOT 깨짐", "DOT깨짐이 0일 것", "육안", "육안확인", "입고 시");
+        // 휘도 편차율(%) — 0 이상 10 이하
+        saveNumericItem(std, "휘도 균일성", "밝기 편차 10% 이내", "측정", "조도계", "입고 시",
+                new BigDecimal("0"), new BigDecimal("10"), "%");
         revisionRepository.save(RevisionHistory.builder().standard(std).rev(0)
                 .revisionDate(LocalDate.of(2023, 6, 1)).revisionNote("최초개정").confirmedBy("배포").build());
     }
@@ -159,8 +164,10 @@ public class DataInitializer implements CommandLineRunner {
     private void seedHousingStandard(Material m) {
         InspectionStandard std = saveStandard(m, 1, LocalDate.of(2023, 6, 1),
                 "Sample검사", "II", "보통검사", "2.5", 0, 1);
-        saveItem(std, "치수검사", "도면 허용공차 이내일 것", "측정", "버니어캘리퍼스", "입고 시");
-        saveItem(std, "외관검사", "크랙·플래시 없을 것", "육안", "육안확인", "입고 시");
+        // 공차 ±0.1mm 가정 — 실제 도면치수에 맞게 변경 가능
+        saveNumericItem(std, "치수검사", "도면 허용공차 이내일 것", "측정", "버니어캘리퍼스", "입고 시",
+                new BigDecimal("-0.1"), new BigDecimal("0.1"), "mm");
+        saveVisualItem(std, "외관검사", "크랙·플래시 없을 것", "육안", "육안확인", "입고 시");
         revisionRepository.save(RevisionHistory.builder().standard(std).rev(0)
                 .revisionDate(LocalDate.of(2023, 6, 1)).revisionNote("최초개정").confirmedBy("배포").build());
     }
@@ -175,11 +182,24 @@ public class DataInitializer implements CommandLineRunner {
                 .build());
     }
 
-    private void saveItem(InspectionStandard std, String name, String spec, String method,
-                           String equipment, String timing) {
+    private void saveVisualItem(InspectionStandard std, String name, String spec,
+                                 String method, String equipment, String timing) {
         itemRepository.save(InspectionItem.builder()
                 .standard(std).itemName(name).specification(spec)
                 .method(method).equipment(equipment).timing(timing)
+                .measurementType(MeasurementType.VISUAL)
+                .addedAtRev(0)
+                .build());
+    }
+
+    private void saveNumericItem(InspectionStandard std, String name, String spec,
+                                  String method, String equipment, String timing,
+                                  BigDecimal min, BigDecimal max, String unit) {
+        itemRepository.save(InspectionItem.builder()
+                .standard(std).itemName(name).specification(spec)
+                .method(method).equipment(equipment).timing(timing)
+                .measurementType(MeasurementType.NUMERIC)
+                .minValue(min).maxValue(max).unit(unit)
                 .addedAtRev(0)
                 .build());
     }

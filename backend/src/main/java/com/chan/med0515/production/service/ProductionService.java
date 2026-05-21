@@ -3,6 +3,7 @@ package com.chan.med0515.production.service;
 import com.chan.med0515.global.error.BusinessException;
 import com.chan.med0515.inspection.entity.InspectionItem;
 import com.chan.med0515.inspection.entity.InspectionStandard;
+import com.chan.med0515.inspection.enums.MeasurementType;
 import com.chan.med0515.inspection.repository.InspectionItemRepository;
 import com.chan.med0515.inspection.repository.InspectionStandardRepository;
 import com.chan.med0515.material.entity.Material;
@@ -24,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -76,17 +78,19 @@ public class ProductionService {
             throw new BusinessException(ProductionErrorCode.ITEM_NOT_BELONG_TO_MODEL);
         }
 
+        InspectionResultCode result = resolveResult(item, request);
         int round = resultRepository.countByLotIdAndInspectionItemId(lotId, item.getId()) + 1;
 
         LotInspectionResult saved = resultRepository.save(LotInspectionResult.builder()
                 .lot(lot)
                 .inspectionItem(item)
                 .round(round)
-                .result(request.result())
+                .result(result)
+                .measuredValue(request.measuredValue())
                 .memo(request.memo())
                 .build());
 
-        if (request.result() == InspectionResultCode.PASS) {
+        if (result == InspectionResultCode.PASS) {
             evaluateAndUpdateLotStatus(lot, modelName);
         }
 
@@ -101,6 +105,25 @@ public class ProductionService {
         }
         lot.fail();
         return buildLotDetail(lot);
+    }
+
+    // NUMERIC: measuredValue로 자동 판정 / VISUAL: 사용자 입력 result 사용
+    private InspectionResultCode resolveResult(InspectionItem item, InspectionResultRequest request) {
+        if (item.getMeasurementType() == MeasurementType.NUMERIC) {
+            if (request.measuredValue() == null) {
+                throw new BusinessException(ProductionErrorCode.MEASURED_VALUE_REQUIRED);
+            }
+            BigDecimal v = request.measuredValue();
+            boolean inRange = (item.getMinValue() == null || v.compareTo(item.getMinValue()) >= 0)
+                    && (item.getMaxValue() == null || v.compareTo(item.getMaxValue()) <= 0);
+            return inRange ? InspectionResultCode.PASS : InspectionResultCode.NG;
+        }
+
+        // VISUAL
+        if (request.result() == null) {
+            throw new BusinessException(ProductionErrorCode.RESULT_REQUIRED);
+        }
+        return request.result();
     }
 
     private ProductionLot getLotEntity(Long lotId) {

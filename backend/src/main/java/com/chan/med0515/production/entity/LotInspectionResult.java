@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.util.Assert;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -35,6 +36,10 @@ public class LotInspectionResult extends BaseEntity {
     @Column(nullable = false, length = 10)
     private InspectionResultCode result;
 
+    // NUMERIC 타입 항목의 실측값
+    @Column(precision = 10, scale = 4)
+    private BigDecimal measuredValue;
+
     @Column(nullable = false)
     private LocalDateTime inspectedAt;
 
@@ -43,7 +48,8 @@ public class LotInspectionResult extends BaseEntity {
 
     @Builder
     public LotInspectionResult(ProductionLot lot, InspectionItem inspectionItem,
-                               int round, InspectionResultCode result, String memo) {
+                               int round, InspectionResultCode result,
+                               BigDecimal measuredValue, String memo) {
         Assert.notNull(lot, "lot은 필수입니다");
         Assert.notNull(inspectionItem, "검사항목은 필수입니다");
         Assert.notNull(result, "결과는 필수입니다");
@@ -51,6 +57,7 @@ public class LotInspectionResult extends BaseEntity {
         this.inspectionItem = inspectionItem;
         this.round = round;
         this.result = result;
+        this.measuredValue = measuredValue;
         this.inspectedAt = LocalDateTime.now();
         this.memo = memo;
     }
