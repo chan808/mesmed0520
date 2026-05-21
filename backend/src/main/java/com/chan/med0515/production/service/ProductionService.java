@@ -8,6 +8,7 @@ import com.chan.med0515.inspection.repository.InspectionItemRepository;
 import com.chan.med0515.inspection.repository.InspectionStandardRepository;
 import com.chan.med0515.material.entity.Material;
 import com.chan.med0515.material.repository.MaterialRepository;
+import com.chan.med0515.production.dto.BatchInspectionResultRequest;
 import com.chan.med0515.production.dto.InspectionResultRequest;
 import com.chan.med0515.production.dto.InspectionResultResponse;
 import com.chan.med0515.production.dto.LotDetailResponse;
@@ -95,6 +96,32 @@ public class ProductionService {
         }
 
         return InspectionResultResponse.from(saved, lot.getStatus());
+    }
+
+    @Transactional
+    public LotDetailResponse submitBatchResults(Long lotId, BatchInspectionResultRequest request) {
+        ProductionLot lot = getLotEntity(lotId);
+        if (lot.getStatus() != LotStatus.IN_PROGRESS) {
+            throw new BusinessException(ProductionErrorCode.LOT_ALREADY_CLOSED);
+        }
+        String modelName = lot.getPlan().getModelName();
+
+        for (InspectionResultRequest req : request.items()) {
+            InspectionItem item = itemRepository.findById(req.inspectionItemId())
+                    .orElseThrow(() -> new BusinessException(ProductionErrorCode.INSPECTION_ITEM_NOT_FOUND));
+            if (!modelName.equals(item.getStandard().getMaterial().getModelName())) {
+                throw new BusinessException(ProductionErrorCode.ITEM_NOT_BELONG_TO_MODEL);
+            }
+            InspectionResultCode result = resolveResult(item, req);
+            int round = resultRepository.countByLotIdAndInspectionItemId(lotId, item.getId()) + 1;
+            resultRepository.save(LotInspectionResult.builder()
+                    .lot(lot).inspectionItem(item).round(round)
+                    .result(result).measuredValue(req.measuredValue()).memo(req.memo())
+                    .build());
+        }
+
+        evaluateAndUpdateLotStatus(lot, modelName);
+        return buildLotDetail(lot);
     }
 
     @Transactional

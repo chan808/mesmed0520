@@ -1,3 +1,5 @@
+export type MeasurementType = 'VISUAL' | 'NUMERIC';
+
 export interface InspectionStandard {
   id: number;
   materialId: number;
@@ -48,6 +50,10 @@ export interface InspectionItem {
   method: string | null;
   equipment: string | null;
   timing: string | null;
+  measurementType: MeasurementType;
+  minValue: number | null;
+  maxValue: number | null;
+  unit: string | null;
 }
 
 export interface InspectionItemRequest {
@@ -56,6 +62,10 @@ export interface InspectionItemRequest {
   method?: string;
   equipment?: string;
   timing?: string;
+  measurementType: MeasurementType;
+  minValue?: number;
+  maxValue?: number;
+  unit?: string;
 }
 
 export interface RevisionHistory {

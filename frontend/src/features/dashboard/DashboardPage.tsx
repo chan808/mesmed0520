@@ -21,7 +21,7 @@ export function DashboardPage() {
       <div className="card-grid">
         <Card label="총 목표 수량" value={data?.totalTargetQty ?? 0} />
         <Card label="총 합격 수량" value={data?.totalPassCount ?? 0} />
-        <Card label="전체 합격률" value={`${((data?.overallPassRate ?? 0) * 100).toFixed(1)}%`} />
+        <Card label="전체 합격률" value={`${(data?.overallPassRate ?? 0).toFixed(1)}%`} />
       </div>
 
       <div className="section" style={{ marginTop: 24 }}>
@@ -50,7 +50,7 @@ export function DashboardPage() {
                   <td>{m.failCount}</td>
                   <td>{m.ngResultCount}</td>
                   <td>{m.recheckCount}</td>
-                  <td>{(m.passRate * 100).toFixed(1)}%</td>
+                  <td>{m.passRate.toFixed(1)}%</td>
                 </tr>
               ))}
             </tbody>

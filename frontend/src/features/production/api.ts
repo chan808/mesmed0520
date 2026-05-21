@@ -1,6 +1,7 @@
 import { api, unwrap } from '../../shared/api/client';
 import type { ApiResponse } from '../../shared/api/types';
 import type {
+  BatchInspectionResultRequest,
   DailyDashboardResponse,
   InspectionResultRequest,
   LotDetailResponse,
@@ -28,7 +29,10 @@ export const productionApi = {
   
   submitResult: (lotId: number, body: InspectionResultRequest) =>
     unwrap(api.post<ApiResponse<any>>(`/production/lots/${lotId}/results`, body)),
-  
+
+  submitBatchResults: (lotId: number, body: BatchInspectionResultRequest) =>
+    unwrap(api.post<ApiResponse<LotDetailResponse>>(`/production/lots/${lotId}/results/batch`, body)),
+
   failLot: (lotId: number) =>
     unwrap(api.patch<ApiResponse<LotDetailResponse>>(`/production/lots/${lotId}/fail`)),
 };

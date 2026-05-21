@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productionApi } from './api';
 import { StatusBadge } from '../../shared/components/StatusBadge';
 import { errorMessage } from '../../shared/api/client';
-import type { ProductionPlanRequest, LotDetailResponse, InspectionResultCode } from './types';
+import type { ProductionPlanRequest, LotDetailResponse, InspectionResultCode, InspectionResultRequest } from './types';
 
 export function ProductionPage() {
   const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [activeLotId, setActiveLotId] = useState<number | null>(null);
+  const [activePlanId, setActivePlanId] = useState<number | null>(null);
 
   const { data: plans, isLoading: plansLoading } = useQuery({
     queryKey: ['production', 'plans', selectedDate],
@@ -32,6 +33,11 @@ export function ProductionPage() {
     },
   });
 
+  const handleStartLot = (planId: number) => {
+    setActivePlanId(planId);
+    startLot.mutate(planId);
+  };
+
   const failLot = useMutation({
     mutationFn: productionApi.failLot,
     onSuccess: () => {
@@ -46,12 +52,16 @@ export function ProductionPage() {
         lotId={activeLotId}
         onClose={() => {
           setActiveLotId(null);
+          setActivePlanId(null);
           queryClient.invalidateQueries({ queryKey: ['production', 'plans', selectedDate] });
         }}
         onFail={() => {
-            if (confirm('이 Lot을 최종 불합격 처리하시겠습니까?')) {
-                failLot.mutate(activeLotId);
-            }
+          if (confirm('이 Lot을 최종 불합격 처리하시겠습니까?')) {
+            failLot.mutate(activeLotId);
+          }
+        }}
+        onNextLot={() => {
+          if (activePlanId) handleStartLot(activePlanId);
         }}
       />
     );
@@ -97,7 +107,7 @@ export function ProductionPage() {
                 </td>
                 <td>
                   {p.status !== 'COMPLETED' && p.status !== 'CANCELLED' && (
-                    <button className="small primary" onClick={() => startLot.mutate(p.id)}>
+                    <button className="small primary" onClick={() => handleStartLot(p.id)}>
                       Lot 시작
                     </button>
                   )}
@@ -195,113 +205,216 @@ function PlanModal({
   );
 }
 
-function LotInspectionView({ lotId, onClose, onFail }: { lotId: number; onClose: () => void; onFail: () => void }) {
+type ItemFormState = { result: InspectionResultCode; measuredValue: string; memo: string };
+
+function LotInspectionView({ lotId, onClose, onFail, onNextLot }: {
+  lotId: number;
+  onClose: () => void;
+  onFail: () => void;
+  onNextLot: () => void;
+}) {
   const queryClient = useQueryClient();
   const { data: lot, isLoading } = useQuery({
     queryKey: ['production', 'lots', lotId],
     queryFn: () => productionApi.getLot(lotId),
   });
 
-  const submitResult = useMutation({
-    mutationFn: ({ itemId, result, memo }: { itemId: number; result: InspectionResultCode; memo?: string }) =>
-      productionApi.submitResult(lotId, { inspectionItemId: itemId, result, memo }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['production', 'lots', lotId] });
+  const [form, setForm] = useState<Record<number, ItemFormState>>({});
+  const [validationError, setValidationError] = useState<string>();
+
+  // PASS 항목은 잠금, 나머지만 폼 상태 유지
+  useEffect(() => {
+    if (!lot) return;
+    setForm(prev => {
+      const next: Record<number, ItemFormState> = {};
+      lot.materials.flatMap(m => m.items).forEach(item => {
+        if (item.currentResult === 'PASS') return;
+        next[item.itemId] = prev[item.itemId] ?? { result: 'PASS', measuredValue: '', memo: '' };
+      });
+      return next;
+    });
+  }, [lot]);
+
+  const submitBatch = useMutation({
+    mutationFn: (items: InspectionResultRequest[]) =>
+      productionApi.submitBatchResults(lotId, { items }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['production', 'lots', lotId], data);
+      if (data.status === 'PASS') {
+        onNextLot();
+      }
     },
   });
+
+  const handleSubmit = () => {
+    if (!lot) return;
+    const allItems = lot.materials.flatMap(m => m.items);
+    const pendingItems = allItems.filter(i => i.itemId in form);
+
+    for (const item of pendingItems) {
+      if (item.measurementType === 'NUMERIC' && !form[item.itemId].measuredValue) {
+        setValidationError(`'${item.itemName}' 실측값을 입력하세요`);
+        return;
+      }
+    }
+    setValidationError(undefined);
+
+    const requests: InspectionResultRequest[] = pendingItems.map(item => {
+      const s = form[item.itemId];
+      if (item.measurementType === 'NUMERIC') {
+        return { inspectionItemId: item.itemId, measuredValue: parseFloat(s.measuredValue) };
+      }
+      return { inspectionItemId: item.itemId, result: s.result, memo: s.memo || undefined };
+    });
+
+    submitBatch.mutate(requests);
+  };
 
   if (isLoading) return <p className="empty">Lot 정보를 불러오는 중…</p>;
   if (!lot) return <p className="empty">Lot 정보를 찾을 수 없습니다.</p>;
 
   const isCompleted = lot.status !== 'IN_PROGRESS';
+  const pendingCount = Object.keys(form).length;
+  const hasRecheck = lot.materials.flatMap(m => m.items).some(i => i.currentResult === 'NG');
 
   return (
     <div className="inspection-view">
       <div className="content-header">
         <div className="row" style={{ gap: 12 }}>
           <button onClick={onClose}>← 뒤로</button>
-          <h1>
-            Lot #{lot.lotNo} - {lot.modelName} (상태: <StatusBadge value={lot.status} />)
-          </h1>
+          <h1>Lot #{lot.lotNo} — {lot.modelName} (<StatusBadge value={lot.status} />)</h1>
         </div>
         {!isCompleted && (
-          <button className="danger" onClick={onFail}>
-            Lot 실패(불합격) 처리
-          </button>
+          <button className="danger" onClick={onFail}>Lot 불합격 처리</button>
         )}
       </div>
 
-      <div className="section">
-        <div className="section-title">자재별 검사 현황</div>
-        <div className="material-list">
-          {lot.materials.map((m) => (
-            <div key={m.materialId} className="material-card section" style={{ padding: 16 }}>
-              <div className="row" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
-                <h3>
-                  {m.partName} ({m.partCode})
-                </h3>
-                <StatusBadge value={m.materialResult ?? 'WAITING'} suffix="material" />
-              </div>
-              <table>
-                <thead>
-                  <tr>
-                    <th>검사항목</th>
-                    <th>규격</th>
-                    <th>최근결과</th>
-                    <th>차수</th>
-                    <th style={{ width: 150 }}>판정</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {m.items.map((item) => (
-                    <tr key={item.itemId}>
-                      <td>{item.itemName}</td>
-                      <td>{item.specification}</td>
-                      <td>
-                        {item.currentResult ? (
-                          <StatusBadge value={item.currentResult} />
+      {lot.materials.map(m => (
+        <div key={m.materialId} className="section" style={{ padding: 16, marginBottom: 16 }}>
+          <div className="row" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
+            <h3>{m.partName} ({m.partCode})</h3>
+            <StatusBadge value={m.materialResult ?? 'WAITING'} suffix="material" />
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>검사항목</th>
+                <th>규격</th>
+                <th>판정 입력</th>
+                <th>차수</th>
+              </tr>
+            </thead>
+            <tbody>
+              {m.items.map(item => {
+                const locked = item.currentResult === 'PASS';
+                const s = form[item.itemId];
+                return (
+                  <tr key={item.itemId} style={item.currentResult === 'NG' ? { background: '#fff1f0' } : undefined}>
+                    <td>{item.itemName}</td>
+                    <td>
+                      {item.specification}
+                      {item.measurementType === 'NUMERIC' &&
+                        ` (${item.minValue ?? '?'} ~ ${item.maxValue ?? '?'} ${item.unit ?? ''})`}
+                    </td>
+                    <td>
+                      {locked ? (
+                        <StatusBadge value="PASS" />
+                      ) : isCompleted ? (
+                        item.currentResult
+                          ? <StatusBadge value={item.currentResult} />
+                          : <span className="muted">미검사</span>
+                      ) : s ? (
+                        item.measurementType === 'NUMERIC' ? (
+                          <input
+                            type="number"
+                            step="any"
+                            placeholder="실측값"
+                            style={{ width: 100 }}
+                            value={s.measuredValue}
+                            onChange={e =>
+                              setForm(prev => ({
+                                ...prev,
+                                [item.itemId]: { ...prev[item.itemId], measuredValue: e.target.value },
+                              }))
+                            }
+                          />
                         ) : (
-                          <span className="muted">-</span>
-                        )}
-                      </td>
-                      <td className="num">{item.latestRound}회차</td>
-                      <td>
-                        {!isCompleted && (
                           <div className="row" style={{ gap: 4 }}>
                             <button
-                              className="small primary"
-                              onClick={() => submitResult.mutate({ itemId: item.itemId, result: 'PASS' })}
-                              disabled={submitResult.isPending}
+                              className={`small ${s.result === 'PASS' ? 'primary' : ''}`}
+                              onClick={() =>
+                                setForm(prev => ({
+                                  ...prev,
+                                  [item.itemId]: { ...prev[item.itemId], result: 'PASS', memo: '' },
+                                }))
+                              }
                             >
                               PASS
                             </button>
                             <button
-                              className="small danger"
-                              onClick={() => {
-                                const memo = prompt('불합격 사유를 입력하세요');
-                                if (memo !== null) {
-                                  submitResult.mutate({ itemId: item.itemId, result: 'NG', memo });
-                                }
-                              }}
-                              disabled={submitResult.isPending}
+                              className={`small ${s.result === 'NG' ? 'danger' : ''}`}
+                              onClick={() =>
+                                setForm(prev => ({
+                                  ...prev,
+                                  [item.itemId]: { ...prev[item.itemId], result: 'NG' },
+                                }))
+                              }
                             >
                               NG
                             </button>
+                            {s.result === 'NG' && (
+                              <input
+                                placeholder="불합격 사유"
+                                style={{ width: 120 }}
+                                value={s.memo}
+                                onChange={e =>
+                                  setForm(prev => ({
+                                    ...prev,
+                                    [item.itemId]: { ...prev[item.itemId], memo: e.target.value },
+                                  }))
+                                }
+                              />
+                            )}
                           </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ))}
+                        )
+                      ) : null}
+                    </td>
+                    <td className="num">{item.latestRound > 0 ? `${item.latestRound}회차` : '-'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      </div>
-      
-      <div className="row-center" style={{ marginTop: 24 }}>
+      ))}
+
+      {!isCompleted && (
+        <div className="row-center" style={{ marginTop: 24, flexDirection: 'column', gap: 8 }}>
+          {validationError && <div className="error">{validationError}</div>}
+          {submitBatch.isError && <div className="error">{errorMessage(submitBatch.error)}</div>}
+          {pendingCount > 0 ? (
+            <button
+              className="primary large"
+              onClick={handleSubmit}
+              disabled={submitBatch.isPending}
+            >
+              {submitBatch.isPending
+                ? '제출 중…'
+                : hasRecheck
+                ? `재검사 제출 (${pendingCount}개 항목)`
+                : `검사 결과 일괄 제출 (${pendingCount}개 항목)`}
+            </button>
+          ) : (
+            <p className="muted">모든 항목이 검사 완료되었습니다.</p>
+          )}
+        </div>
+      )}
+
+      {isCompleted && (
+        <div className="row-center" style={{ marginTop: 24 }}>
           <button className="primary large" onClick={onClose}>검사 화면 닫기</button>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

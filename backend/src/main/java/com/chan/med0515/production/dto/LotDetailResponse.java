@@ -1,6 +1,7 @@
 package com.chan.med0515.production.dto;
 
 import com.chan.med0515.inspection.entity.InspectionItem;
+import com.chan.med0515.inspection.enums.MeasurementType;
 import com.chan.med0515.material.entity.Material;
 import com.chan.med0515.production.entity.LotInspectionResult;
 import com.chan.med0515.production.entity.ProductionLot;
@@ -36,6 +37,10 @@ public record LotDetailResponse(
             Long itemId,
             String itemName,
             String specification,
+            MeasurementType measurementType,
+            BigDecimal minValue,
+            BigDecimal maxValue,
+            String unit,
             InspectionResultCode currentResult, // null = 미검사
             int latestRound,
             List<RoundResult> rounds
@@ -46,6 +51,7 @@ public record LotDetailResponse(
             int latestRound = results.isEmpty() ? 0 : results.get(results.size() - 1).getRound();
             List<RoundResult> rounds = results.stream().map(RoundResult::from).toList();
             return new ItemResult(item.getId(), item.getItemName(), item.getSpecification(),
+                    item.getMeasurementType(), item.getMinValue(), item.getMaxValue(), item.getUnit(),
                     current, latestRound, rounds);
         }
     }

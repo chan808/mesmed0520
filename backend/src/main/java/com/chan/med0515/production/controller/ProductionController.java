@@ -9,11 +9,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
 
+@Validated
 @RestController
 @RequestMapping("/api/production")
 @RequiredArgsConstructor
@@ -61,6 +63,14 @@ public class ProductionController {
             @Valid @RequestBody InspectionResultRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(productionService.submitResult(lotId, request)));
+    }
+
+    @PostMapping("/lots/{lotId}/results/batch")
+    public ResponseEntity<ApiResponse<LotDetailResponse>> submitBatchResults(
+            @PathVariable Long lotId,
+            @Valid @RequestBody BatchInspectionResultRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(productionService.submitBatchResults(lotId, request)));
     }
 
     @PatchMapping("/lots/{lotId}/fail")

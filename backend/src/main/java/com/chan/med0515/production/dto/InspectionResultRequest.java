@@ -7,8 +7,8 @@ import java.math.BigDecimal;
 
 public record InspectionResultRequest(
         @NotNull Long inspectionItemId,
-        InspectionResultCode result,   // VISUAL 타입만 필수 — NUMERIC은 서버 자동 판정
-        BigDecimal measuredValue,      // NUMERIC 타입만 필수
+        InspectionResultCode result,
+        BigDecimal measuredValue,
         String memo
 ) {
 }

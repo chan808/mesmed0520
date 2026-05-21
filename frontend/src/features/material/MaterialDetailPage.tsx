@@ -404,14 +404,18 @@ export function MaterialDetailPage() {
   );
 }
 
-function AddItemInlineForm({ onConfirm }: { onConfirm: (item: InspectionItemRequest) => void }) {
+function AddItemInlineForm({ onConfirm }: { onConfirm: (item: import('../inspection/types').InspectionItemRequest) => void }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<InspectionItemRequest>({
+  const [form, setForm] = useState<import('../inspection/types').InspectionItemRequest>({
     itemName: '',
     specification: '',
     method: '육안',
     equipment: '육안확인',
     timing: '입고 시',
+    measurementType: 'VISUAL',
+    unit: '',
+    minValue: undefined,
+    maxValue: undefined,
   });
 
   if (!open) {
@@ -447,28 +451,68 @@ function AddItemInlineForm({ onConfirm }: { onConfirm: (item: InspectionItemRequ
           <div className="field">
             <label>규격(Spec)</label>
             <input
-              value={form.specification}
+              value={form.specification ?? ''}
               onChange={(e) => setForm({ ...form, specification: e.target.value })}
             />
           </div>
           <div className="field">
+            <label>측정 유형</label>
+            <select
+              value={form.measurementType}
+              onChange={(e) => setForm({ ...form, measurementType: e.target.value as any })}
+            >
+              <option value="VISUAL">VISUAL (육안판정)</option>
+              <option value="NUMERIC">NUMERIC (수치판정)</option>
+            </select>
+          </div>
+          {form.measurementType === 'NUMERIC' && (
+            <div className="field-row">
+              <div className="field">
+                <label>최소값</label>
+                <input
+                  type="number"
+                  step="any"
+                  value={form.minValue ?? ''}
+                  onChange={(e) => setForm({ ...form, minValue: e.target.value ? Number(e.target.value) : undefined })}
+                />
+              </div>
+              <div className="field">
+                <label>최대값</label>
+                <input
+                  type="number"
+                  step="any"
+                  value={form.maxValue ?? ''}
+                  onChange={(e) => setForm({ ...form, maxValue: e.target.value ? Number(e.target.value) : undefined })}
+                />
+              </div>
+              <div className="field">
+                <label>단위</label>
+                <input
+                  value={form.unit ?? ''}
+                  onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                  placeholder="예: mm, kg"
+                />
+              </div>
+            </div>
+          )}
+          <div className="field">
             <label>검사 방법</label>
             <input
-              value={form.method}
+              value={form.method ?? ''}
               onChange={(e) => setForm({ ...form, method: e.target.value })}
             />
           </div>
           <div className="field">
             <label>측정기기</label>
             <input
-              value={form.equipment}
+              value={form.equipment ?? ''}
               onChange={(e) => setForm({ ...form, equipment: e.target.value })}
             />
           </div>
           <div className="field">
             <label>주기</label>
             <input
-              value={form.timing}
+              value={form.timing ?? ''}
               onChange={(e) => setForm({ ...form, timing: e.target.value })}
             />
           </div>

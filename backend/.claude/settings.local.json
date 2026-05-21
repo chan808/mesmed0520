@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(.\\\\gradlew.bat compileJava)",
-      "Bash(.\\\\gradlew.bat clean *)"
+      "Bash(.\\\\gradlew.bat clean *)",
+      "Bash(npx tsc *)",
+      "PowerShell(& \"C:\\\\Users\\\\ckswh\\\\Desktop\\\\2026\\\\med0515\\\\frontend\\\\node_modules\\\\.bin\\\\tsc.cmd\" --noEmit --project \"C:\\\\Users\\\\ckswh\\\\Desktop\\\\2026\\\\med0515\\\\frontend\\\\tsconfig.json\" 2>&1)"
     ]
   }
 }

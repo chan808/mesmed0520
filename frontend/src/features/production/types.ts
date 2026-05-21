@@ -35,10 +35,16 @@ export interface MaterialResult {
   items: ItemResult[];
 }
 
+export type MeasurementType = 'VISUAL' | 'NUMERIC';
+
 export interface ItemResult {
   itemId: number;
   itemName: string;
   specification: string;
+  measurementType: MeasurementType;
+  minValue: number | null;
+  maxValue: number | null;
+  unit: string | null;
   currentResult: InspectionResultCode | null;
   latestRound: number;
   rounds: RoundResult[];
@@ -47,14 +53,20 @@ export interface ItemResult {
 export interface RoundResult {
   round: number;
   result: InspectionResultCode;
+  measuredValue: number | null;
   inspectedAt: string;
   memo: string | null;
 }
 
 export interface InspectionResultRequest {
   inspectionItemId: number;
-  result: InspectionResultCode;
+  result?: InspectionResultCode;
+  measuredValue?: number;
   memo?: string;
+}
+
+export interface BatchInspectionResultRequest {
+  items: InspectionResultRequest[];
 }
 
 export interface DailyDashboardResponse {

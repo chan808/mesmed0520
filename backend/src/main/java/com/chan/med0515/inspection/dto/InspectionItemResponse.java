@@ -1,6 +1,9 @@
 package com.chan.med0515.inspection.dto;
 
 import com.chan.med0515.inspection.entity.InspectionItem;
+import com.chan.med0515.inspection.enums.MeasurementType;
+
+import java.math.BigDecimal;
 
 public record InspectionItemResponse(
         Long id,
@@ -9,7 +12,11 @@ public record InspectionItemResponse(
         String specification,
         String method,
         String equipment,
-        String timing
+        String timing,
+        MeasurementType measurementType,
+        BigDecimal minValue,
+        BigDecimal maxValue,
+        String unit
 ) {
     public static InspectionItemResponse from(InspectionItem item) {
         return new InspectionItemResponse(
@@ -19,7 +26,11 @@ public record InspectionItemResponse(
                 item.getSpecification(),
                 item.getMethod(),
                 item.getEquipment(),
-                item.getTiming()
+                item.getTiming(),
+                item.getMeasurementType(),
+                item.getMinValue(),
+                item.getMaxValue(),
+                item.getUnit()
         );
     }
 }
