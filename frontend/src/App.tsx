@@ -6,6 +6,7 @@ import { DashboardPage } from './features/dashboard/DashboardPage';
 import { MaterialListPage } from './features/material/MaterialListPage';
 import { MaterialCreatePage } from './features/material/MaterialCreatePage';
 import { MaterialDetailPage } from './features/material/MaterialDetailPage';
+import { ProductionPage } from './features/production/ProductionPage';
 
 export function App() {
   return (
@@ -19,15 +20,17 @@ export function App() {
           </ProtectedRoute>
         }
       >
-        <Route path="/" element={<Navigate to="/materials" replace />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
 
         <Route path="/materials" element={<MaterialListPage />} />
         <Route path="/materials/new" element={<MaterialCreatePage />} />
         <Route path="/materials/:id" element={<MaterialDetailPage />} />
+
+        <Route path="/production" element={<ProductionPage />} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/materials" replace />} />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }

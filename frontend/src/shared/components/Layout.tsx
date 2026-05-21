@@ -4,6 +4,7 @@ import { useAuth } from '../auth/useAuth';
 const NAV = [
   { to: '/dashboard', label: '대시보드' },
   { to: '/materials', label: '자재 관리' },
+  { to: '/production', label: '생산 공정' },
 ];
 
 export function Layout() {

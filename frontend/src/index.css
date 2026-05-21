@@ -134,8 +134,19 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 }
 .badge-PASS    { background: var(--c-pass); }
 .badge-FAIL    { background: var(--c-fail); }
+.badge-NG      { background: var(--c-fail); }
 .badge-PENDING { background: var(--c-pending); }
 .badge-HOLD    { background: var(--c-hold); }
+.badge-WAITING { background: var(--c-muted); }
+
+.badge-PLANNED     { background: var(--c-info); }
+.badge-IN_PROGRESS { background: var(--c-accent); }
+.badge-COMPLETED   { background: var(--c-pass); }
+.badge-CANCELLED   { background: var(--c-muted); }
+
+.badge-PASS-material { background: var(--c-pass); }
+.badge-NG-material   { background: var(--c-fail); }
+.badge-WAITING-material { background: var(--c-pending); }
 
 .badge-INFO     { background: var(--c-info); }
 .badge-WARNING  { background: var(--c-warning); }

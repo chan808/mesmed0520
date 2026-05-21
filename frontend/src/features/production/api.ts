@@ -1,39 +1,39 @@
 import { api, unwrap } from '../../shared/api/client';
-import type { ApiResponse, EquipmentStatus } from '../../shared/api/types';
+import type { ApiResponse } from '../../shared/api/types';
 import type {
-  Alarm,
-  Equipment,
-  EquipmentCreateRequest,
-  ProductionLog,
-  ProductionLogCreateRequest,
+  DailyDashboardResponse,
+  InspectionResultRequest,
+  LotDetailResponse,
+  ProductionPlanRequest,
+  ProductionPlanResponse,
 } from './types';
 
-export const equipmentApi = {
-  list: () => unwrap(api.get<ApiResponse<Equipment[]>>('/equipment')),
-  create: (body: EquipmentCreateRequest) =>
-    unwrap(api.post<ApiResponse<Equipment>>('/equipment', body)),
-  updateStatus: (id: number, status: EquipmentStatus) =>
-    unwrap(
-      api.patch<ApiResponse<Equipment>>(`/equipment/${id}/status`, { status }),
-    ),
+export const productionApi = {
+  // Plans
+  listPlans: (date: string) =>
+    unwrap(api.get<ApiResponse<ProductionPlanResponse[]>>(`/production/plans?date=${date}`)),
+  
+  getPlan: (id: number) =>
+    unwrap(api.get<ApiResponse<ProductionPlanResponse>>(`/production/plans/${id}`)),
+  
+  registerPlan: (body: ProductionPlanRequest) =>
+    unwrap(api.post<ApiResponse<ProductionPlanResponse>>('/production/plans', body)),
+
+  // Lots
+  startLot: (planId: number) =>
+    unwrap(api.post<ApiResponse<LotDetailResponse>>(`/production/plans/${planId}/lots`)),
+  
+  getLot: (lotId: number) =>
+    unwrap(api.get<ApiResponse<LotDetailResponse>>(`/production/lots/${lotId}`)),
+  
+  submitResult: (lotId: number, body: InspectionResultRequest) =>
+    unwrap(api.post<ApiResponse<any>>(`/production/lots/${lotId}/results`, body)),
+  
+  failLot: (lotId: number) =>
+    unwrap(api.patch<ApiResponse<LotDetailResponse>>(`/production/lots/${lotId}/fail`)),
 };
 
-export const alarmApi = {
-  list: (activeOnly = false) =>
-    unwrap(
-      api.get<ApiResponse<Alarm[]>>(`/alarms${activeOnly ? '?activeOnly=true' : ''}`),
-    ),
-  resolve: (id: number) =>
-    unwrap(api.patch<ApiResponse<Alarm>>(`/alarms/${id}/resolve`)),
-};
-
-export const productionLogApi = {
-  list: (todayOnly = false) =>
-    unwrap(
-      api.get<ApiResponse<ProductionLog[]>>(
-        `/production-logs${todayOnly ? '?todayOnly=true' : ''}`,
-      ),
-    ),
-  create: (body: ProductionLogCreateRequest) =>
-    unwrap(api.post<ApiResponse<ProductionLog>>('/production-logs', body)),
+export const dashboardApi = {
+  getDaily: (date?: string) =>
+    unwrap(api.get<ApiResponse<DailyDashboardResponse>>(`/dashboard/daily${date ? `?date=${date}` : ''}`)),
 };
