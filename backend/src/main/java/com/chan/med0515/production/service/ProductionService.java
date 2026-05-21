@@ -57,11 +57,7 @@ public class ProductionService {
         return buildLotDetail(lot);
     }
 
-    /**
-     * 검사 결과 제출.
-     * PASS 시 전 항목 통과 여부 재평가 → 조건 충족 시 lot PASS.
-     * NG 시 lot은 IN_PROGRESS 유지 → 재검사 대상.
-     */
+    // 검사 통과 시 lot pass, NG 시 lot은 IN_PROGRESS 유지 -> 재검사 대상
     @Transactional
     public InspectionResultResponse submitResult(Long lotId, InspectionResultRequest request) {
         ProductionLot lot = getLotEntity(lotId);
@@ -76,8 +72,7 @@ public class ProductionService {
         // 항목의 품목이 이 lot의 모델에 속하는지 확인
         Long modelId = lot.getPlan().getModel().getId();
         Material material = item.getStandard().getMaterial();
-        if (material.getProductModel() == null
-                || !material.getProductModel().getId().equals(modelId)) {
+        if (material.getProductModel() == null || !material.getProductModel().getId().equals(modelId)) {
             throw new BusinessException(ProductionErrorCode.ITEM_NOT_BELONG_TO_MODEL);
         }
 
@@ -108,18 +103,12 @@ public class ProductionService {
         return buildLotDetail(lot);
     }
 
-    // ─────────────────────────────────────────────────
-    // private helpers
-    // ─────────────────────────────────────────────────
-
     private ProductionLot getLotEntity(Long lotId) {
         return lotRepository.findById(lotId)
                 .orElseThrow(() -> new BusinessException(ProductionErrorCode.LOT_NOT_FOUND));
     }
 
-    /**
-     * 모델의 모든 품목 × 모든 검사항목의 최신 결과가 전부 PASS이면 lot을 PASS 처리.
-     */
+    // 모델의 모든 품목 × 모든 검사항목의 최신 결과가 전부 PASS이면 lot을 PASS 처리.
     private void evaluateAndUpdateLotStatus(ProductionLot lot, Long modelId) {
         List<Material> materials = materialRepository.findByProductModelIdAndDeletedAtIsNull(modelId);
 

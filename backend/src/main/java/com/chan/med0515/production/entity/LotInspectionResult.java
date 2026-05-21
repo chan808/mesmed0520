@@ -27,6 +27,7 @@ public class LotInspectionResult extends BaseEntity {
     @JoinColumn(name = "inspection_item_id", nullable = false)
     private InspectionItem inspectionItem;
 
+    // 재시도 횟수 기록
     @Column(nullable = false)
     private int round;
 
