@@ -10,12 +10,10 @@ import com.chan.med0515.material.repository.MaterialRepository;
 import com.chan.med0515.production.dto.InspectionResultRequest;
 import com.chan.med0515.production.dto.InspectionResultResponse;
 import com.chan.med0515.production.dto.LotDetailResponse;
-import com.chan.med0515.production.entity.ProductModel;
 import com.chan.med0515.production.entity.ProductionPlan;
 import com.chan.med0515.production.enums.InspectionResultCode;
 import com.chan.med0515.production.enums.LotStatus;
 import com.chan.med0515.production.enums.PlanStatus;
-import com.chan.med0515.production.repository.ProductModelRepository;
 import com.chan.med0515.production.repository.ProductionPlanRepository;
 import com.chan.med0515.production.service.ProductionService;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,13 +35,11 @@ import static org.assertj.core.api.Assertions.*;
 class ProductionServiceTest {
 
     @Autowired ProductionService productionService;
-    @Autowired ProductModelRepository modelRepository;
     @Autowired MaterialRepository materialRepository;
     @Autowired InspectionStandardRepository standardRepository;
     @Autowired InspectionItemRepository itemRepository;
     @Autowired ProductionPlanRepository planRepository;
 
-    // 시드 데이터(오늘 날짜)와 충돌 방지용 고정 날짜
     private static final LocalDate TEST_DATE = LocalDate.of(2024, 1, 1);
 
     private InspectionItem item1;
@@ -52,19 +48,13 @@ class ProductionServiceTest {
 
     @BeforeEach
     void setUp() {
-        // 각 테스트마다 독립된 모델/품목/항목/계획 생성
-        // nanoTime으로 name/partCode 중복 방지
-        ProductModel model = modelRepository.save(ProductModel.builder()
-                .name("테스트모델-" + System.nanoTime())
-                .build());
+        String modelName = "테스트모델-" + System.nanoTime();
 
-        Material material = Material.builder()
-                .modelName(model.getName())
+        Material material = materialRepository.save(Material.builder()
+                .modelName(modelName)
                 .partName("테스트부품")
                 .partCode("TEST-" + System.nanoTime())
-                .build();
-        material.assignModel(model);
-        material = materialRepository.save(material);
+                .build());
 
         InspectionStandard std = standardRepository.save(InspectionStandard.builder()
                 .material(material)
@@ -87,7 +77,7 @@ class ProductionServiceTest {
                 .method("측정").equipment("버니어").timing("입고시").addedAtRev(0).build());
 
         plan = planRepository.save(ProductionPlan.builder()
-                .model(model).planDate(TEST_DATE).targetQty(10).build());
+                .modelName(modelName).planDate(TEST_DATE).targetQty(10).build());
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -139,7 +129,6 @@ class ProductionServiceTest {
     void submitResult_partialPass_lotRemainsInProgress() {
         LotDetailResponse lot = productionService.startLot(plan.getId());
 
-        // item1만 PASS, item2는 미검사
         InspectionResultResponse result = productionService.submitResult(
                 lot.lotId(),
                 new InspectionResultRequest(item1.getId(), InspectionResultCode.PASS, null)
@@ -175,18 +164,15 @@ class ProductionServiceTest {
         LotDetailResponse lot = productionService.startLot(plan.getId());
         Long lotId = lot.lotId();
 
-        // item1: 1차 NG → 2차 PASS (재검사)
         productionService.submitResult(lotId,
                 new InspectionResultRequest(item1.getId(), InspectionResultCode.NG, "1차 실패"));
         productionService.submitResult(lotId,
                 new InspectionResultRequest(item1.getId(), InspectionResultCode.PASS, "재검사 통과"));
-        // item2: PASS
         InspectionResultResponse last = productionService.submitResult(lotId,
                 new InspectionResultRequest(item2.getId(), InspectionResultCode.PASS, null));
 
         assertThat(last.lotStatus()).isEqualTo(LotStatus.PASS);
 
-        // round 기록 확인
         LotDetailResponse detail = productionService.getLotDetail(lotId);
         LotDetailResponse.ItemResult item1Detail = detail.materials().stream()
                 .flatMap(m -> m.items().stream())
@@ -223,16 +209,11 @@ class ProductionServiceTest {
     @Test
     @DisplayName("이 lot의 모델에 속하지 않는 검사항목 제출 시 예외가 발생한다")
     void submitResult_itemFromDifferentModel_throwsException() {
-        // 다른 모델의 품목 항목 생성
-        ProductModel otherModel = modelRepository.save(ProductModel.builder()
-                .name("다른모델-" + System.nanoTime()).build());
-        Material otherMaterial = Material.builder()
-                .modelName(otherModel.getName())
+        Material otherMaterial = materialRepository.save(Material.builder()
+                .modelName("다른모델-" + System.nanoTime())
                 .partName("다른부품")
                 .partCode("OTHER-" + System.nanoTime())
-                .build();
-        otherMaterial.assignModel(otherModel);
-        otherMaterial = materialRepository.save(otherMaterial);
+                .build());
 
         InspectionStandard otherStd = standardRepository.save(InspectionStandard.builder()
                 .material(otherMaterial).rev(0).establishedAt(TEST_DATE)

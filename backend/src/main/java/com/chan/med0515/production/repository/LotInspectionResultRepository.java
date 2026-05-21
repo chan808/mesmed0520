@@ -22,22 +22,22 @@ public interface LotInspectionResultRepository extends JpaRepository<LotInspecti
     @Query("""
             SELECT COUNT(r) FROM LotInspectionResult r
             WHERE r.lot.plan.planDate = :date
-              AND r.lot.plan.model.id = :modelId
+              AND r.lot.plan.modelName = :modelName
               AND r.result = :result
             """)
-    long countByPlanDateAndModelIdAndResult(
+    long countByPlanDateAndModelNameAndResult(
             @Param("date") LocalDate date,
-            @Param("modelId") Long modelId,
+            @Param("modelName") String modelName,
             @Param("result") InspectionResultCode result);
 
     // 대시보드: 재검사 횟수 (round > 1인 결과 수)
     @Query("""
             SELECT COUNT(r) FROM LotInspectionResult r
             WHERE r.lot.plan.planDate = :date
-              AND r.lot.plan.model.id = :modelId
+              AND r.lot.plan.modelName = :modelName
               AND r.round > 1
             """)
-    long countRechecksByPlanDateAndModelId(
+    long countRechecksByPlanDateAndModelName(
             @Param("date") LocalDate date,
-            @Param("modelId") Long modelId);
+            @Param("modelName") String modelName);
 }

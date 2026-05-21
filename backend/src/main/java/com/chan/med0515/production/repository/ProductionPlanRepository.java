@@ -8,5 +8,5 @@ import java.util.List;
 
 public interface ProductionPlanRepository extends JpaRepository<ProductionPlan, Long> {
     List<ProductionPlan> findByPlanDate(LocalDate date);
-    boolean existsByModelIdAndPlanDate(Long modelId, LocalDate planDate);
+    boolean existsByModelNameAndPlanDate(String modelName, LocalDate planDate);
 }

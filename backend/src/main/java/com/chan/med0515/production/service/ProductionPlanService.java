@@ -1,9 +1,9 @@
 package com.chan.med0515.production.service;
 
 import com.chan.med0515.global.error.BusinessException;
+import com.chan.med0515.material.repository.MaterialRepository;
 import com.chan.med0515.production.dto.ProductionPlanRequest;
 import com.chan.med0515.production.dto.ProductionPlanResponse;
-import com.chan.med0515.production.entity.ProductModel;
 import com.chan.med0515.production.entity.ProductionPlan;
 import com.chan.med0515.production.error.ProductionErrorCode;
 import com.chan.med0515.production.repository.ProductionPlanRepository;
@@ -20,16 +20,19 @@ import java.util.List;
 public class ProductionPlanService {
 
     private final ProductionPlanRepository planRepository;
-    private final ProductModelService modelService;
+    private final MaterialRepository materialRepository;
 
     @Transactional
     public ProductionPlanResponse register(ProductionPlanRequest request) {
-        if (planRepository.existsByModelIdAndPlanDate(request.modelId(), request.planDate())) {
+        // material에 등록된 modelName인지 검증
+        if (materialRepository.findByModelNameAndDeletedAtIsNull(request.modelName()).isEmpty()) {
+            throw new BusinessException(ProductionErrorCode.MODEL_NOT_FOUND);
+        }
+        if (planRepository.existsByModelNameAndPlanDate(request.modelName(), request.planDate())) {
             throw new BusinessException(ProductionErrorCode.DUPLICATE_PLAN);
         }
-        ProductModel model = modelService.getEntityById(request.modelId());
         ProductionPlan plan = ProductionPlan.builder()
-                .model(model)
+                .modelName(request.modelName())
                 .planDate(request.planDate())
                 .targetQty(request.targetQty())
                 .build();

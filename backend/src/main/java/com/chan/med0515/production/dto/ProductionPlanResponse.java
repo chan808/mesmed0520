@@ -7,7 +7,6 @@ import java.time.LocalDate;
 
 public record ProductionPlanResponse(
         Long id,
-        Long modelId,
         String modelName,
         LocalDate planDate,
         int targetQty,
@@ -17,8 +16,7 @@ public record ProductionPlanResponse(
     public static ProductionPlanResponse from(ProductionPlan plan) {
         return new ProductionPlanResponse(
                 plan.getId(),
-                plan.getModel().getId(),
-                plan.getModel().getName(),
+                plan.getModelName(),
                 plan.getPlanDate(),
                 plan.getTargetQty(),
                 plan.getPassCount(),

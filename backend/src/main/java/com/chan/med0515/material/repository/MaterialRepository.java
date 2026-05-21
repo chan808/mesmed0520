@@ -9,5 +9,5 @@ public interface MaterialRepository extends JpaRepository<Material, Long> {
 
     boolean existsByPartCode(String partCode);
 
-    List<Material> findByProductModelIdAndDeletedAtIsNull(Long productModelId);
+    List<Material> findByModelNameAndDeletedAtIsNull(String modelName);
 }

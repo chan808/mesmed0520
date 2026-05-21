@@ -17,9 +17,8 @@ import java.time.LocalDate;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProductionPlan extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "model_id", nullable = false)
-    private ProductModel model;
+    @Column(nullable = false, length = 50)
+    private String modelName;
 
     @Column(nullable = false)
     private LocalDate planDate;
@@ -35,11 +34,11 @@ public class ProductionPlan extends BaseEntity {
     private PlanStatus status;
 
     @Builder
-    public ProductionPlan(ProductModel model, LocalDate planDate, int targetQty) {
-        Assert.notNull(model, "모델은 필수입니다");
+    public ProductionPlan(String modelName, LocalDate planDate, int targetQty) {
+        Assert.hasText(modelName, "모델명은 필수입니다");
         Assert.notNull(planDate, "계획일은 필수입니다");
         Assert.isTrue(targetQty > 0, "목표수량은 1 이상이어야 합니다");
-        this.model = model;
+        this.modelName = modelName;
         this.planDate = planDate;
         this.targetQty = targetQty;
         this.passCount = 0;

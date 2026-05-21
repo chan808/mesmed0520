@@ -8,10 +8,8 @@ import com.chan.med0515.inspection.repository.InspectionStandardRepository;
 import com.chan.med0515.inspection.repository.RevisionHistoryRepository;
 import com.chan.med0515.material.entity.Material;
 import com.chan.med0515.material.repository.MaterialRepository;
-import com.chan.med0515.production.entity.ProductModel;
 import com.chan.med0515.production.entity.ProductionLot;
 import com.chan.med0515.production.entity.ProductionPlan;
-import com.chan.med0515.production.repository.ProductModelRepository;
 import com.chan.med0515.production.repository.ProductionLotRepository;
 import com.chan.med0515.production.repository.ProductionPlanRepository;
 import com.chan.med0515.user.entity.User;
@@ -35,7 +33,6 @@ public class DataInitializer implements CommandLineRunner {
     private final InspectionStandardRepository standardRepository;
     private final InspectionItemRepository itemRepository;
     private final RevisionHistoryRepository revisionRepository;
-    private final ProductModelRepository modelRepository;
     private final ProductionPlanRepository planRepository;
     private final ProductionLotRepository lotRepository;
     private final PasswordEncoder passwordEncoder;
@@ -59,28 +56,18 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedProductionData() {
-        if (modelRepository.existsByName("ER-2000 SMART")) return;
-
-        // ── 생산 모델 2개 ──────────────────────────────────────
-        ProductModel er2000 = modelRepository.save(ProductModel.builder()
-                .name("ER-2000 SMART")
-                .description("스마트 응급처치 모니터")
-                .build());
-
-        ProductModel bp3000 = modelRepository.save(ProductModel.builder()
-                .name("BP-3000")
-                .description("자동 혈압계")
-                .build());
+        // 이미 시드됐으면 스킵
+        if (materialRepository.existsByPartCode("10018500701")) return;
 
         // ── ER-2000 SMART 품목 3개 ─────────────────────────────
-        Material lcd = seedMaterial(er2000, "LCD", "10018500701", "KJC Display corporation", "2.4inch");
-        Material btnSwitch = seedMaterial(er2000, "버튼 스위치", "BTN-SW-001", "대한전자", "6x6mm");
-        Material battery = seedMaterial(er2000, "배터리팩", "BAT-PACK-001", "삼성SDI", "3.7V 2500mAh");
+        Material lcd = seedMaterial("ER-2000 SMART", "LCD", "10018500701", "KJC Display corporation", "2.4inch");
+        Material btnSwitch = seedMaterial("ER-2000 SMART", "버튼 스위치", "BTN-SW-001", "대한전자", "6x6mm");
+        Material battery = seedMaterial("ER-2000 SMART", "배터리팩", "BAT-PACK-001", "삼성SDI", "3.7V 2500mAh");
 
         // ── BP-3000 품목 3개 ──────────────────────────────────
-        Material sensor = seedMaterial(bp3000, "압력센서모듈", "SEN-BP-001", "Honeywell", "0-300mmHg");
-        Material lcdB = seedMaterial(bp3000, "LCD B", "LCD-B-001", "KJC Display corporation", "1.8inch");
-        Material housing = seedMaterial(bp3000, "하우징", "HOU-BP-001", "우진플라텍", "ABS 수지");
+        Material sensor = seedMaterial("BP-3000", "압력센서모듈", "SEN-BP-001", "Honeywell", "0-300mmHg");
+        Material lcdB = seedMaterial("BP-3000", "LCD B", "LCD-B-001", "KJC Display corporation", "1.8inch");
+        Material housing = seedMaterial("BP-3000", "하우징", "HOU-BP-001", "우진플라텍", "ABS 수지");
 
         // ── 각 품목 검사 기준서 + 항목 등록 ──────────────────────
         seedLcdStandard(lcd);
@@ -93,34 +80,30 @@ public class DataInitializer implements CommandLineRunner {
         // ── 오늘 날짜 생산 계획 2개 (대시보드 확인용) ──────────────
         LocalDate today = LocalDate.now();
         ProductionPlan er2000Plan = planRepository.save(ProductionPlan.builder()
-                .model(er2000).planDate(today).targetQty(50).build());
+                .modelName("ER-2000 SMART").planDate(today).targetQty(50).build());
         ProductionPlan bp3000Plan = planRepository.save(ProductionPlan.builder()
-                .model(bp3000).planDate(today).targetQty(30).build());
+                .modelName("BP-3000").planDate(today).targetQty(30).build());
 
-        // ER-2000 SMART: lot 3개 생성 (IN_PROGRESS 상태 — 대시보드 확인용)
         er2000Plan.startIfPlanned();
         for (int i = 1; i <= 3; i++) {
             lotRepository.save(ProductionLot.builder().plan(er2000Plan).lotNo(i).build());
         }
 
-        // BP-3000: lot 2개 생성
         bp3000Plan.startIfPlanned();
         for (int i = 1; i <= 2; i++) {
             lotRepository.save(ProductionLot.builder().plan(bp3000Plan).lotNo(i).build());
         }
     }
 
-    private Material seedMaterial(ProductModel model, String partName, String partCode,
+    private Material seedMaterial(String modelName, String partName, String partCode,
                                    String supplier, String spec) {
-        Material m = Material.builder()
-                .modelName(model.getName())
+        return materialRepository.save(Material.builder()
+                .modelName(modelName)
                 .partName(partName)
                 .partCode(partCode)
                 .supplier(supplier)
                 .materialSpec(spec)
-                .build();
-        m.assignModel(model);
-        return materialRepository.save(m);
+                .build());
     }
 
     // ── 검사 기준서 등록 헬퍼 ─────────────────────────────────────

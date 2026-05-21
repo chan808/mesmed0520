@@ -31,7 +31,6 @@ import static org.assertj.core.api.Assertions.*;
 class LotInspectionResultRepositoryTest {
 
     @Autowired LotInspectionResultRepository resultRepository;
-    @Autowired ProductModelRepository modelRepository;
     @Autowired MaterialRepository materialRepository;
     @Autowired InspectionStandardRepository standardRepository;
     @Autowired InspectionItemRepository itemRepository;
@@ -39,23 +38,18 @@ class LotInspectionResultRepositoryTest {
     @Autowired ProductionLotRepository lotRepository;
 
     private static final LocalDate TEST_DATE = LocalDate.of(2024, 1, 1);
+    private static final String MODEL_NAME = "레포테스트모델";
 
-    private ProductModel model;
     private InspectionItem item;
     private ProductionLot lot;
 
     @BeforeEach
     void setUp() {
-        model = modelRepository.save(ProductModel.builder()
-                .name("레포테스트모델").build());
-
-        Material material = Material.builder()
-                .modelName(model.getName())
+        Material material = materialRepository.save(Material.builder()
+                .modelName(MODEL_NAME)
                 .partName("테스트부품")
                 .partCode("REPO-001")
-                .build();
-        material.assignModel(model);
-        material = materialRepository.save(material);
+                .build());
 
         InspectionStandard std = standardRepository.save(InspectionStandard.builder()
                 .material(material).rev(0).establishedAt(TEST_DATE)
@@ -69,7 +63,7 @@ class LotInspectionResultRepositoryTest {
                 .build());
 
         ProductionPlan plan = planRepository.save(ProductionPlan.builder()
-                .model(model).planDate(TEST_DATE).targetQty(10)
+                .modelName(MODEL_NAME).planDate(TEST_DATE).targetQty(10)
                 .build());
         plan.startIfPlanned();
 
@@ -80,8 +74,7 @@ class LotInspectionResultRepositoryTest {
 
     @Test
     @DisplayName("특정 날짜·모델의 NG 결과 수를 정확히 집계한다")
-    void countByPlanDateAndModelIdAndResult_countNGCorrectly() {
-        // PASS 1건, NG 2건 저장
+    void countByPlanDateAndModelNameAndResult_countNGCorrectly() {
         resultRepository.save(LotInspectionResult.builder()
                 .lot(lot).inspectionItem(item).round(1)
                 .result(InspectionResultCode.PASS).memo(null).build());
@@ -92,16 +85,15 @@ class LotInspectionResultRepositoryTest {
                 .lot(lot).inspectionItem(item).round(3)
                 .result(InspectionResultCode.NG).memo(null).build());
 
-        long ngCount = resultRepository.countByPlanDateAndModelIdAndResult(
-                TEST_DATE, model.getId(), InspectionResultCode.NG);
+        long ngCount = resultRepository.countByPlanDateAndModelNameAndResult(
+                TEST_DATE, MODEL_NAME, InspectionResultCode.NG);
 
         assertThat(ngCount).isEqualTo(2);
     }
 
     @Test
     @DisplayName("재검사 횟수(round > 1)를 정확히 집계한다")
-    void countRechecksByPlanDateAndModelId_countRound2Plus() {
-        // round=1 (최초 검사), round=2, round=3 (재검사)
+    void countRechecksByPlanDateAndModelName_countRound2Plus() {
         resultRepository.save(LotInspectionResult.builder()
                 .lot(lot).inspectionItem(item).round(1)
                 .result(InspectionResultCode.NG).memo(null).build());
@@ -112,10 +104,9 @@ class LotInspectionResultRepositoryTest {
                 .lot(lot).inspectionItem(item).round(3)
                 .result(InspectionResultCode.PASS).memo(null).build());
 
-        long recheckCount = resultRepository.countRechecksByPlanDateAndModelId(
-                TEST_DATE, model.getId());
+        long recheckCount = resultRepository.countRechecksByPlanDateAndModelName(
+                TEST_DATE, MODEL_NAME);
 
-        // round > 1 인 결과 = round2, round3 → 2건
         assertThat(recheckCount).isEqualTo(2);
     }
 

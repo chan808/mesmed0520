@@ -41,23 +41,22 @@ public class DashboardService {
 
     private ModelSummary buildModelSummary(ProductionPlan plan, LocalDate date) {
         Long planId = plan.getId();
-        Long modelId = plan.getModel().getId();
+        String modelName = plan.getModelName();
 
         int lotCount = lotRepository.countByPlanId(planId);
         int inProgressCount = lotRepository.countByPlanIdAndStatus(planId, LotStatus.IN_PROGRESS);
         int failCount = lotRepository.countByPlanIdAndStatus(planId, LotStatus.FAIL);
 
-        long ngResultCount = resultRepository.countByPlanDateAndModelIdAndResult(
-                date, modelId, InspectionResultCode.NG);
-        long recheckCount = resultRepository.countRechecksByPlanDateAndModelId(date, modelId);
+        long ngResultCount = resultRepository.countByPlanDateAndModelNameAndResult(
+                date, modelName, InspectionResultCode.NG);
+        long recheckCount = resultRepository.countRechecksByPlanDateAndModelName(date, modelName);
 
         double passRate = plan.getTargetQty() == 0 ? 0.0
                 : Math.round((double) plan.getPassCount() / plan.getTargetQty() * 1000) / 10.0;
 
         return new ModelSummary(
                 planId,
-                modelId,
-                plan.getModel().getName(),
+                modelName,
                 plan.getTargetQty(),
                 plan.getPassCount(),
                 lotCount,

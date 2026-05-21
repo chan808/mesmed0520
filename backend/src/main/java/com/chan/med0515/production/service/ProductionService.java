@@ -69,10 +69,10 @@ public class ProductionService {
         InspectionItem item = itemRepository.findById(request.inspectionItemId())
                 .orElseThrow(() -> new BusinessException(ProductionErrorCode.INSPECTION_ITEM_NOT_FOUND));
 
-        // 항목의 품목이 이 lot의 모델에 속하는지 확인
-        Long modelId = lot.getPlan().getModel().getId();
+        // 항목의 품목 modelName이 이 lot의 모델과 일치하는지 확인
+        String modelName = lot.getPlan().getModelName();
         Material material = item.getStandard().getMaterial();
-        if (material.getProductModel() == null || !material.getProductModel().getId().equals(modelId)) {
+        if (!modelName.equals(material.getModelName())) {
             throw new BusinessException(ProductionErrorCode.ITEM_NOT_BELONG_TO_MODEL);
         }
 
@@ -87,7 +87,7 @@ public class ProductionService {
                 .build());
 
         if (request.result() == InspectionResultCode.PASS) {
-            evaluateAndUpdateLotStatus(lot, modelId);
+            evaluateAndUpdateLotStatus(lot, modelName);
         }
 
         return InspectionResultResponse.from(saved, lot.getStatus());
@@ -109,8 +109,8 @@ public class ProductionService {
     }
 
     // 모델의 모든 품목 × 모든 검사항목의 최신 결과가 전부 PASS이면 lot을 PASS 처리.
-    private void evaluateAndUpdateLotStatus(ProductionLot lot, Long modelId) {
-        List<Material> materials = materialRepository.findByProductModelIdAndDeletedAtIsNull(modelId);
+    private void evaluateAndUpdateLotStatus(ProductionLot lot, String modelName) {
+        List<Material> materials = materialRepository.findByModelNameAndDeletedAtIsNull(modelName);
 
         for (Material material : materials) {
             Optional<InspectionStandard> standardOpt =
@@ -132,13 +132,12 @@ public class ProductionService {
 
         // 모든 항목 PASS 확인
         lot.pass();
-        lot.getPlan().startIfPlanned();
         lot.getPlan().incrementPassCount();
     }
 
     private LotDetailResponse buildLotDetail(ProductionLot lot) {
-        Long modelId = lot.getPlan().getModel().getId();
-        List<Material> materials = materialRepository.findByProductModelIdAndDeletedAtIsNull(modelId);
+        String modelName = lot.getPlan().getModelName();
+        List<Material> materials = materialRepository.findByModelNameAndDeletedAtIsNull(modelName);
 
         List<MaterialResult> materialResults = materials.stream()
                 .map(m -> buildMaterialResult(lot.getId(), m))

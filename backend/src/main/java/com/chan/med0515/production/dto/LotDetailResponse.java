@@ -67,7 +67,7 @@ public record LotDetailResponse(
                 lot.getStatus(),
                 lot.getPlan().getId(),
                 lot.getPlan().getPlanDate(),
-                lot.getPlan().getModel().getName(),
+                lot.getPlan().getModelName(),
                 materials
         );
     }

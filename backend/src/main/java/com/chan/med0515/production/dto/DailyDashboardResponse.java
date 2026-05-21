@@ -15,15 +15,14 @@ public record DailyDashboardResponse(
 
     public record ModelSummary(
             Long planId,
-            Long modelId,
             String modelName,
             int targetQty,
             int passCount,
             int lotCount,
             int inProgressCount,
             int failCount,
-            long ngResultCount,   // 전체 NG 판정 건수
-            long recheckCount,    // 재검사 횟수 (round > 1)
+            long ngResultCount,
+            long recheckCount,
             double passRate,
             PlanStatus planStatus
     ) {
