@@ -47,7 +47,7 @@ public class DashboardService {
         int inProgressCount = lotRepository.countByPlanIdAndStatus(planId, LotStatus.IN_PROGRESS);
         int failCount = lotRepository.countByPlanIdAndStatus(planId, LotStatus.FAIL);
 
-        long ngResultCount = resultRepository.countByPlanDateAndModelNameAndResult(
+        long ngResultCount = resultRepository.countInitialResultByPlanDateAndModelName(
                 date, modelName, InspectionResultCode.NG);
         long recheckCount = resultRepository.countRechecksByPlanDateAndModelName(date, modelName);
 

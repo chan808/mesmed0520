@@ -18,14 +18,15 @@ public interface LotInspectionResultRepository extends JpaRepository<LotInspecti
 
     Optional<LotInspectionResult> findTopByLotIdAndInspectionItemIdOrderByRoundDesc(Long lotId, Long itemId);
 
-    // 대시보드: 특정 날짜, 특정 모델의 총 NG 건수
+    // 대시보드: 특정 날짜, 특정 모델의 최초 NG 건수 (round = 1인 것만)
     @Query("""
             SELECT COUNT(r) FROM LotInspectionResult r
             WHERE r.lot.plan.planDate = :date
               AND r.lot.plan.modelName = :modelName
               AND r.result = :result
+              AND r.round = 1
             """)
-    long countByPlanDateAndModelNameAndResult(
+    long countInitialResultByPlanDateAndModelName(
             @Param("date") LocalDate date,
             @Param("modelName") String modelName,
             @Param("result") InspectionResultCode result);
