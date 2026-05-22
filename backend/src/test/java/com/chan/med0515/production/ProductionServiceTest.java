@@ -230,4 +230,28 @@ class ProductionServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("속하지 않는");
     }
+
+    @Test
+    @DisplayName("이미 목표 수량을 달성한 계획에 lot을 생성하려 하면 예외가 발생한다")
+    void startLot_completedPlan_throwsException() {
+        // targetQty를 1로 설정한 새 계획 생성
+        ProductionPlan smallPlan = planRepository.save(ProductionPlan.builder()
+                .modelName(plan.getModelName()).planDate(TEST_DATE).targetQty(1).build());
+
+        // 1개 합격 처리하여 계획 완료 상태로 만듦
+        LotDetailResponse lot = productionService.startLot(smallPlan.getId());
+        productionService.submitResult(lot.lotId(),
+                new InspectionResultRequest(item1.getId(), InspectionResultCode.PASS, null));
+        productionService.submitResult(lot.lotId(),
+                new InspectionResultRequest(item2.getId(), InspectionResultCode.PASS, null));
+
+        // 계획 상태가 COMPLETED인지 확인
+        ProductionPlan updated = planRepository.findById(smallPlan.getId()).orElseThrow();
+        assertThat(updated.getStatus()).isEqualTo(PlanStatus.COMPLETED);
+
+        // 추가 lot 생성 시도 시 예외 발생 확인
+        assertThatThrownBy(() -> productionService.startLot(smallPlan.getId()))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("목표 수량을 달성한 계획");
+    }
 }

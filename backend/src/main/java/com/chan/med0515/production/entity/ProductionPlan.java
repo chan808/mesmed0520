@@ -57,6 +57,9 @@ public class ProductionPlan extends BaseEntity {
 
     public void updateTargetQty(int qty) {
         Assert.isTrue(qty > 0, "목표수량은 1 이상이어야 합니다");
+        if (qty < this.passCount) {
+            throw new com.chan.med0515.global.error.BusinessException(com.chan.med0515.production.error.ProductionErrorCode.TARGET_QTY_LESS_THAN_PASS_COUNT);
+        }
         this.targetQty = qty;
         if (this.passCount >= this.targetQty) {
             this.status = PlanStatus.COMPLETED;

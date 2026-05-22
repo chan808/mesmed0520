@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productionApi } from './api';
+import { materialApi } from '../material/api';
 import { StatusBadge } from '../../shared/components/StatusBadge';
 import { errorMessage } from '../../shared/api/client';
 import type { ProductionPlanRequest, LotDetailResponse, InspectionResultCode, InspectionResultRequest, UpdateTargetQtyRequest } from './types';
@@ -184,11 +185,24 @@ function PlanModal({
   isLoading: boolean;
   error?: string;
 }) {
+  const { data: materials, isLoading: materialsLoading } = useQuery({
+    queryKey: ['materials'],
+    queryFn: materialApi.list,
+  });
+
+  const uniqueModelNames = Array.from(new Set(materials?.map((m) => m.modelName) || [])).sort();
+
   const [form, setForm] = useState<ProductionPlanRequest>({
     modelName: '',
     planDate: date,
     targetQty: 10,
   });
+
+  useEffect(() => {
+    if (!form.modelName && uniqueModelNames.length > 0) {
+      setForm((prev) => ({ ...prev, modelName: uniqueModelNames[0] }));
+    }
+  }, [uniqueModelNames, form.modelName]);
 
   return (
     <div className="modal-backdrop">
@@ -211,12 +225,28 @@ function PlanModal({
           </div>
           <div className="field">
             <label>모델명</label>
-            <input
-              value={form.modelName}
-              onChange={(e) => setForm({ ...form, modelName: e.target.value })}
-              placeholder="예: 갤럭시 S24"
-              required
-            />
+            {materialsLoading ? (
+              <select disabled>
+                <option>로딩 중…</option>
+              </select>
+            ) : uniqueModelNames.length > 0 ? (
+              <select
+                value={form.modelName}
+                onChange={(e) => setForm({ ...form, modelName: e.target.value })}
+                required
+              >
+                <option value="" disabled>모델을 선택하세요</option>
+                {uniqueModelNames.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="error" style={{ fontSize: '0.9em', marginTop: 4 }}>
+                등록된 자재 정보가 없습니다. 먼저 자재를 등록해주세요.
+              </div>
+            )}
           </div>
           <div className="field">
             <label>목표 수량</label>
@@ -233,7 +263,11 @@ function PlanModal({
             <button type="button" onClick={onClose} disabled={isLoading}>
               취소
             </button>
-            <button type="submit" className="primary" disabled={isLoading}>
+            <button
+              type="submit"
+              className="primary"
+              disabled={isLoading || uniqueModelNames.length === 0}
+            >
               {isLoading ? '등록 중…' : '등록'}
             </button>
           </div>

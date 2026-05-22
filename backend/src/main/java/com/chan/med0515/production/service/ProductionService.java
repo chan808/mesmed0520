@@ -19,6 +19,7 @@ import com.chan.med0515.production.entity.ProductionLot;
 import com.chan.med0515.production.entity.ProductionPlan;
 import com.chan.med0515.production.enums.InspectionResultCode;
 import com.chan.med0515.production.enums.LotStatus;
+import com.chan.med0515.production.enums.PlanStatus;
 import com.chan.med0515.production.error.ProductionErrorCode;
 import com.chan.med0515.production.repository.LotInspectionResultRepository;
 import com.chan.med0515.production.repository.ProductionLotRepository;
@@ -45,6 +46,18 @@ public class ProductionService {
     @Transactional
     public LotDetailResponse startLot(Long planId) {
         ProductionPlan plan = planService.getEntityById(planId);
+
+        if (plan.getStatus() == com.chan.med0515.production.enums.PlanStatus.COMPLETED) {
+            throw new BusinessException(ProductionErrorCode.PLAN_ALREADY_COMPLETED);
+        }
+
+        // 진행 중인 lot이 있으면 새로 만들지 않고 반환 (이어하기)
+        Optional<ProductionLot> existingLot = lotRepository.findFirstByPlanIdAndStatusOrderByCreatedAtDesc(
+                planId, LotStatus.IN_PROGRESS);
+        if (existingLot.isPresent()) {
+            return buildLotDetail(existingLot.get());
+        }
+
         int nextLotNo = lotRepository.countByPlanId(planId) + 1;
         plan.startIfPlanned();
 
